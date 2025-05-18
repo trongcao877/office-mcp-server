@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  mcp-server:
+    build: .
+    image: mcp-server:latest
+    container_name: mcp-server
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file: .env
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - mcp-network
+
+networks:
+  mcp-network:
+    driver: bridge
