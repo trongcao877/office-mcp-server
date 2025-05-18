@@ -14,6 +14,12 @@ const documentsRoutes = require('./routes/documents');
 const spreadsheetRoutes = require('./routes/spreadsheets');
 const presentationRoutes = require('./routes/presentations');
 
+// Import middleware
+const { errorHandler, requestLogger } = require('./middleware');
+
+// Import socket.io setup
+const setupSocketIO = require('./socket');
+
 // Initialize Express app
 const app = express();
 const server = http.createServer(app);
@@ -25,6 +31,9 @@ const io = socketIo(server, {
   }
 });
 
+// Setup socket.io
+setupSocketIO(io);
+
 // Middleware
 app.use(cors({
   origin: process.env.CORS_ORIGIN,
@@ -32,6 +41,7 @@ app.use(cors({
 }));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(requestLogger);
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -44,31 +54,24 @@ app.get('/', (req, res) => {
   res.send('MCP Server đang chạy');
 });
 
-// Socket.io connection handler
-io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
-  
-  // Join a document collaboration room
-  socket.on('joinDocument', (documentId) => {
-    socket.join(`document-${documentId}`);
-    console.log(`Client ${socket.id} joined document: ${documentId}`);
-  });
-  
-  // Handle document changes
-  socket.on('documentChange', (data) => {
-    socket.to(`document-${data.documentId}`).emit('documentUpdate', data);
-  });
-  
-  // Handle disconnection
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
-  });
-});
+// Error handler middleware
+app.use(errorHandler);
 
 // Start the server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server đang chạy trên cổng ${PORT}`);
+  console.log(`Môi trường: ${process.env.NODE_ENV}`);
+});
+
+// Xử lý tín hiệu tắt server
+process.on('SIGTERM', () => {
+  console.info('SIGTERM signal received.');
+  console.log('Đóng server HTTP');
+  server.close(() => {
+    console.log('HTTP server đã đóng');
+    process.exit(0);
+  });
 });
 
 module.exports = { app, server, io };
