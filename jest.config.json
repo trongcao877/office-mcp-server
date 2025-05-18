@@ -1,0 +1,8 @@
+{
+  "roots": [
+    "<rootDir>/tests"
+  ],
+  "testEnvironment": "node",
+  "coverageDirectory": "./coverage/",
+  "collectCoverage": true
+}
